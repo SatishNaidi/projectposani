@@ -1,0 +1,24 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Values.servicename }}
+  labels:
+    name: {{ .Values.servicename }}
+    part-of: {{ .Values.servicename }}
+  annotations:
+    # by default the type is elb (classic load balancer).
+    service.beta.kubernetes.io/aws-load-balancer-type: {{ .Values.lb_service_type }}
+spec:
+  # this setting is to make sure the source IP address is preserved.
+  externalTrafficPolicy: Local
+  type: {{ .Values.service_type }}
+  selector:
+    name: {{ .Values.servicename }}
+    part-of: {{ .Values.servicename }}
+  ports:
+    - name: http
+      port: {{ .Values.http_port }}
+      targetPort: http
+    - name: https
+      port: {{ .Values.https_port }}
+      targetPort: https

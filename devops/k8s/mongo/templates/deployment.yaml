@@ -1,0 +1,55 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: mongodb-storage
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp2
+reclaimPolicy: Delete
+---
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: db-configmap
+data:
+  # Configuration values can be set as key-value properties
+  database: mongodb
+  database_uri: {{ .Values.db_uri }}
+
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+ name: mongo
+spec:
+ serviceName: {{ .Values.servicename }}
+ replicas: {{ .Values.replicaCount }}
+ template:
+   metadata:
+     labels:
+       role: mongo
+       environment: test
+   spec:
+     terminationGracePeriodSeconds: 10
+     containers:
+       - name: mongo
+         image: {{ .Values.pullimage }}
+         command:
+           - mongod
+           - "--bind_ip=0.0.0.0"
+         ports:
+           - containerPort: {{ .Values.mongo_port }}
+         volumeMounts:
+           - name: {{ .Values.pv_name }}
+             mountPath: {{ .Values.db_path }}
+ volumeClaimTemplates:
+ - metadata:
+     name: {{ .Values.pv_name }}
+     annotations:
+       volume.beta.kubernetes.io/storage-class: {{ .Values.db_storage_class }}
+   spec:
+     accessModes: [ "ReadWriteOnce" ]
+     resources:
+       requests:
+         storage: 10Gi

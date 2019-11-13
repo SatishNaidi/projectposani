@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-application
+  labels:
+    app: nodejs
+spec:
+  template:
+    metadata:
+      name: frontend-application
+      labels:
+        app: nodejs
+    spec:
+      containers:
+      - name: nodejs
+        image: {{ .Values.pullimage }}
+        ports:
+        - containerPort: {{ .Values.nodejsport }}
+        env:
+        - name: {{ .Values.db_env_name }}
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.mongo_configmap_name }}
+              key: {{ .Values.mongo_database_uri }}
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: nodejs
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-scaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: frontend
+  minReplicas: {{ .Values.minreplicaCount }}
+  maxReplicas: {{ .Values.maxreplicaCount }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.avgcpuutilization }}
